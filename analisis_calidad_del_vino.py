@@ -65,7 +65,7 @@ class PipelineVinos:
     # ─────────────────────────────
     @registrar_ejecucion
     def ingestar(self):
-        raw_df = pd.read_csv(self.ruta, sep=';')
+        raw_df = pd.read_csv(self.ruta)
         validos = []
 
         for _, fila in raw_df.iterrows():

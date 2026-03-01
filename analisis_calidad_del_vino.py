@@ -30,7 +30,7 @@ from scipy import stats
 
 # ── 2. MÓDULOS PROPIOS ──────────────────────────────────────────────────────
 from decorators import registrar_ejecucion, validar_normalidad
-from modelos import VinoSchema  # Basado en tu estructura de Pydantic
+from schemas import VinoSchema  # Basado en tu estructura de Pydantic
 
 # ── 3. CONFIGURACIÓN ESTÉTICA ───────────────────────────────────────────────
 RUTA_SALIDA = Path("outputs")

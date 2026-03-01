@@ -1,0 +1,16 @@
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# Python (archivos compilados)
+__pycache__/
+*.py[cod]
+
+# Outputs y temporales
+outputs/
+.ipynb_checkpoints/
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db

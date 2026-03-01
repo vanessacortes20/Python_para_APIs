@@ -1,0 +1,15 @@
+# Semana 1: Análisis y Gráficas
+pandas
+numpy
+scipy
+matplotlib
+seaborn
+
+# Semana 2: Validación y Modelos
+pydantic>=2.0.0
+email-validator
+
+# Semana 3: API (Ya lo dejamos listo)
+fastapi
+uvicorn[standard]
+requests

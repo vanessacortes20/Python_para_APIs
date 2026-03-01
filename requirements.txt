@@ -1,15 +1,14 @@
 # Semana 1: Análisis y Gráficas
+# Análisis y Estadística (Semana 1)
 pandas
 numpy
 scipy
 matplotlib
 seaborn
 
-# Semana 2: Validación y Modelos
+# Validación y Modelado (Semana 2)
 pydantic>=2.0.0
-email-validator
 
-# Semana 3: API (Ya lo dejamos listo)
+# Servidor Web (Semana 3)
 fastapi
 uvicorn[standard]
-requests

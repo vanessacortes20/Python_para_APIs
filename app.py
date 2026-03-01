@@ -3,29 +3,33 @@ APP FLASK - SEMANA 3
 ====================
 
 Mini servidor web síncrono que:
-- Ejecuta el análisis completo
-- Permite limpiar datos vía endpoint
-- Devuelve resultados en JSON
 
-Demuestra:
-✔ Request / Response
-✔ Endpoints GET y POST
-✔ Integración con tu pipeline
+✔ Ejecuta el pipeline completo de análisis
+✔ Permite limpiar un CSV vía endpoint POST
+✔ Devuelve resultados en formato JSON
+
+Cumple con:
+- Request / Response
+- Endpoints GET y POST
+- Migración de limpieza a /clean
 """
 
 from flask import Flask, jsonify, request
-from analisis import PipelineVinos
+from analisis_calidad_del_vino import PipelineVinos
 import pandas as pd
 from pathlib import Path
 
+# ─────────────────────────────────────────────
+# CONFIGURACIÓN
+# ─────────────────────────────────────────────
 app = Flask(__name__)
 
-RUTA_DATA = Path("Data")
+RUTA_DATA = Path("data")
 RUTA_DATA.mkdir(exist_ok=True)
 
 
 # ─────────────────────────────────────────────
-# ENDPOINT 1: Home
+# ENDPOINT 1: HOME
 # ─────────────────────────────────────────────
 @app.route("/", methods=["GET"])
 def home():
@@ -39,18 +43,19 @@ def home():
 
 
 # ─────────────────────────────────────────────
-# ENDPOINT 2: Ejecutar análisis completo
+# ENDPOINT 2: EJECUTAR PIPELINE COMPLETO
 # ─────────────────────────────────────────────
 @app.route("/analizar", methods=["GET"])
 def ejecutar_analisis():
     try:
-        pipeline = PipelineVinos("winequality-red.csv")
-        pipeline \
-            .cargar_datos() \
-            .limpiar_datos() \
-            .clasificar_vinos() \
-            .analisis_exploratorio() \
+        pipeline = PipelineVinos("data/dataset_calidad_vinos.csv")
+
+        (pipeline
+            .ingestar()
+            .eda()
+            .limpiar_y_clasificar()
             .interpretar_con_ia()
+        )
 
         return jsonify({
             "status": "ok",
@@ -66,7 +71,7 @@ def ejecutar_analisis():
 
 
 # ─────────────────────────────────────────────
-# ENDPOINT 3: Limpieza de datos (POST)
+# ENDPOINT 3: LIMPIEZA CSV (POST)
 # ─────────────────────────────────────────────
 @app.route("/clean", methods=["POST"])
 def limpiar_csv():
@@ -83,7 +88,10 @@ def limpiar_csv():
         df = pd.read_csv(file)
 
         # Limpieza básica
+        duplicados = df.duplicated().sum()
         df = df.drop_duplicates()
+
+        nulos = df.isna().sum().sum()
         df = df.dropna()
 
         ruta_salida = RUTA_DATA / "csv_limpio_desde_api.csv"
@@ -92,6 +100,8 @@ def limpiar_csv():
         return jsonify({
             "status": "ok",
             "mensaje": "Archivo limpiado correctamente",
+            "duplicados_eliminados": int(duplicados),
+            "nulos_eliminados": int(nulos),
             "filas_finales": len(df),
             "archivo_guardado": str(ruta_salida)
         })

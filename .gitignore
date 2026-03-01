@@ -8,7 +8,7 @@ __pycache__/
 *.py[cod]
 
 # Outputs y temporales
-outputs/
+# outputs/
 .ipynb_checkpoints/
 
 # Archivos de sistema

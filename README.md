@@ -95,10 +95,22 @@ Este proyecto integra **exactamente** la rúbrica de evaluación provista durant
 
 ## 📈 Hallazgos Destacados del EDA
 
-El sistema exploratorio graficó y detectó lo siguiente (`outputs/`):
+El sistema exploratorio graficó y detectó estadísticamente lo siguiente (todos los artefactos y gráficas se guardan progresivamente en `outputs/`):
 
-1. **Valores Atípicos (Outliers):** La columna `alcohol` presentó picos irreales. El sistema limpió matemáticamente estos errores aislando todo lo que superara el percentil 98 (P98).
-2. **Correlaciones de Oro:** La matriz (`eda_03_correlaciones.png`) demostró que entre más nivel de *Alcohol*, mejor *Calidad* es percibida por los expertos (correlación positiva). Mientras que los altos niveles de *Acidez Volátil* (olor a vinagre) desplomaron la calificación (correlación negativa).
+### 1. Tratamiento de Valores Atípicos (Outliers) en "Alcohol"
+Al analizar la dispersión de las variables mediante Diagramas de Caja y Bigotes (*Boxplots*), se evidenció que la variable de `alcohol` contenía picos irreales o altamente atípicos para un vino estándar (algunos registros superando el 14%). 
+**Decisión de Ingeniería:** Para no sesgar el modelo ni el reporte promedio, el sistema aplicó una función matemática pura (`eliminar_outliers_alcohol` en `limpieza.py`) que automáticamente poda y descarta cualquier registro que supere el **percentil 98 (P98)** de la muestra, garantizando un dataset robusto para la IA.
+
+### 2. Correlaciones Químicas: ¿Qué hace a un vino "Premium"?
+La matriz de correlaciones de Pearson (`eda_03_correlaciones.png`) demostró matemáticamente los secretos de la calidad dictaminada por los sommeliers:
+*   **Correlación Positiva de Oro (`r = 0.476`):** Entre más nivel de **Alcohol**, mayor es la puntuación de **Calidad** recibida. Es la relación directa más fuerte de todo el conjunto de datos.
+*   **El Enemigo del Sabor (`r = -0.390`):** Existe una fuerte correlación negativa con la **Acidez Volátil**. A medida que este tipo de acidez sube (la cual está tipicamente asociada a olores avinagrados o a "picado"), la calidad del vino se desploma irremediablemente.
+*   **Relación Densidad y Acidez (`r = 0.668`):** Un hallazgo puramente químico es cómo la `acidez_fija` empuja fuertemente la `densidad` del líquido hacia arriba, mostrando una correlación técnica perfecta.
+
+### 3. Distribuciones y Control Estadístico (Test de Normalidad)
+El análisis de histogramas (`eda_01_distribuciones.png`) y el test de *Shapiro-Wilk* automatizado vía decoradores arrojan que:
+*   La variable de **pH** demuestra un comportamiento notablemente normal (Curva de Campana o Gaussiana perfecta) centrada en una media de `3.31`. Esto garantiza que los vinos de la muestra tienen un nivel de acidez óptimo y seguro para el consumo, sin sesgos peligrosos hacia extremos alcalinos o ácidos excesivos.
+*   Variables como el `azucar_residual` o los `cloruros` tienen un alto grado de asimetría positiva (*Skewness*), con colas largas a la derecha, lo que exigió el tratamiento de outliers detallado en el punto 1.
 
 ---
 

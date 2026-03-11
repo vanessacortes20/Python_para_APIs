@@ -6,8 +6,16 @@
 """
 
 # ─────────────────────────────────────────────
+"""
+PIPELINE PRINCIPAL DE ANÁLISIS ENOLÓGICO
+========================================
+Este script actúa como el "Orquestador" principal del proyecto.
+Carga los datos, los valida (Pydantic), hace el EDA, los limpia de duplicados 
+y valores nulos usando las funciones importadas, y finalmente ejecuta la IA.
+"""
 # 1. LIBRERÍAS
 # ─────────────────────────────────────────────
+import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,17 +23,21 @@ import seaborn as sns
 import json
 from pathlib import Path
 
+# Importamos nuestras herramientas creadas en módulos separados
 from decorators import registrar_ejecucion, validar_normalidad
-from schemas import VinoSchema
+from schemas import VinoInputSchema, VinoOutputSchema
+from limpieza import eliminar_duplicados, eliminar_nulos, eliminar_outliers_alcohol
 
 
 # ─────────────────────────────────────────────
-# 2. CONFIGURACIÓN
+# 2. CONFIGURACIÓN DE RUTAS LOCALES
 # ─────────────────────────────────────────────
-RUTA_OUTPUTS = Path("outputs")
+# Pathlib nos permite usar rutas relativas sin importar en qué SO estemos.
+RUTA_BASE = Path(__file__).resolve().parent
+RUTA_DATA = RUTA_BASE / "data"
+RUTA_OUTPUTS = RUTA_BASE / "outputs"
 RUTA_OUTPUTS.mkdir(exist_ok=True)
 
-RUTA_DATA = Path("data")
 RUTA_DATA.mkdir(exist_ok=True)
 
 plt.rcParams.update({
@@ -50,13 +62,23 @@ def clasificar_vino(data: dict) -> str:
 
 
 # ─────────────────────────────────────────────
-# 4. PIPELINE PRINCIPAL
-# ─────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════
+# 1. CLASE PRINCIPAL DEL PIPELINE (POO)
+# ═══════════════════════════════════════════════════════════════
+
 class PipelineVinos:
+    """
+    Clase que agrupa todas las fases de procesamiento secuencial.
+    Sigue el patrón 'Builder' devolviendo `self` para permitir 
+    concatenar métodos de manera fluida (method chaining).
+    """
 
     def __init__(self, ruta_csv: str):
-        self.ruta = ruta_csv
+        self.ruta_csv = RUTA_DATA / ruta_csv
         self.df = None
+        
+        # Creación de carpetas de salida en caso de no existir
+        RUTA_OUTPUTS.mkdir(exist_ok=True)
         self.reporte_eda = {}
         self.reporte_ia = {}
 
@@ -64,20 +86,37 @@ class PipelineVinos:
     # INGESTA + VALIDACIÓN (Semana 2)
     # ─────────────────────────────
     @registrar_ejecucion
-    def ingestar(self):
-        raw_df = pd.read_csv(self.ruta)
-        validos = []
+    def ingestar_y_validar(self):
+        """
+        Fase 1 e Integración Semana 2 (Pydantic).
+        Carga el CSV crudo y valida INMEDIATAMENTE de manera estricta
+        cada fila para garantizar que cumpla con VinoInputSchema.
+        """
+        try:
+            print("\n  [INFO] Cargando dataset crudo...")
+            # Carga rápida a Pandas DataFrame
+            df_crudo = pd.read_csv(self.ruta_csv)
+            
+            # List Comprehension para intentar parsear fila a fila a dict()
+            # Y descartar de inmediato filas dañadas
+            filas_validas = []
+            for idx, fila in df_crudo.iterrows():
+                try:
+                    # Empaquetamos en el Schema. Si rompe reglas químicas, tira error.
+                    vino_validado = VinoInputSchema(**fila.to_dict())
+                    filas_validas.append(vino_validado.model_dump())
+                except Exception as e:
+                    # Fallos en QA simplemente no entran a la base
+                    pass
+            
+            # Recreamos el DataFrame solo con registros de alta pureza
+            self.df = pd.DataFrame(filas_validas)
+            print(f"    ✓ Registros validados según esquema Pydantic: {len(self.df)}")
+            return self
 
-        for _, fila in raw_df.iterrows():
-            try:
-                v = VinoSchema(**fila.to_dict())
-                validos.append(v.model_dump())
-            except:
-                pass
-
-        self.df = pd.DataFrame(validos)
-        print(f"✓ Registros válidos: {len(self.df)}")
-        return self
+        except FileNotFoundError:
+            print(f"  [ERROR] No se encontró el dataset en: {self.ruta_csv}")
+            sys.exit(1)
 
     # ─────────────────────────────
     # EDA COMPLETO
@@ -198,77 +237,101 @@ class PipelineVinos:
     # LIMPIEZA + EXPORT DATASET
     # ─────────────────────────────
     @registrar_ejecucion
-    def limpiar_y_clasificar(self):
+    def aplicar_limpieza(self):
+        """
+        Fase 3: Limpieza (Semana 1).
+        Llama a las funciones matemáticas sin estado guardadas en limpieza.py
+        """
+        if self.df is None: return self
 
-        print("\n═══ ETAPA DE LIMPIEZA DE DATOS ═══")
-
-        # 1. Duplicados
-        duplicados = self.df.duplicated().sum()
-        self.df = self.df.drop_duplicates()
-        print(f"→ Duplicados eliminados: {duplicados}")
-
-        # 2. Nulos
-        nulos = self.df.isna().sum().sum()
-        self.df = self.df.dropna()
-        print(f"→ Valores nulos eliminados: {nulos}")
-
-        # 3. Outliers extremos (P98 alcohol)
-        p98 = self.df["alcohol"].quantile(0.98)
+        # 1. Remover Nulls
         antes = len(self.df)
-        self.df = self.df[self.df["alcohol"] <= p98]
-        print(f"→ Outliers eliminados: {antes - len(self.df)}")
+        self.df = eliminar_nulos(self.df)
+        print(f"    ✓ Nulos eliminados: {antes - len(self.df)}")
 
-        # 4. Clasificación
-        self.df["categoria"] = self.df.apply(
-            lambda r: clasificar_vino(r.to_dict()), axis=1
-        )
+        # 2. Remover Duplicados
+        antes = len(self.df)
+        self.df = eliminar_duplicados(self.df)
+        print(f"    ✓ Duplicados eliminados: {antes - len(self.df)}")
 
-        # 5. Exportación dataset limpio
-        self.df.to_csv(RUTA_DATA / "vinos_limpio.csv", index=False)
-        print("✓ Dataset limpio exportado a data/vinos_limpio.csv")
+        # 3. Remover Outliers en Alcohol
+        antes = len(self.df)
+        self.df = eliminar_outliers_alcohol(self.df)
+        print(f"    ✓ Outliers de alcohol eliminados: {antes - len(self.df)}")
 
+        # 4. Guardar archivo final inmaculado
+        ruta_salida = RUTA_DATA / "vinos_limpio.csv"
+        self.df.to_csv(ruta_salida, index=False)
+        print(f"    ✓ Dataset final guardado localmente exportado en carpeta /data.")
         return self
 
     # ─────────────────────────────
     # SEMANA 3 - INTERPRETACIÓN IA
     # ─────────────────────────────
     @registrar_ejecucion
-    def interpretar_con_ia(self):
+    def interpretacion_ai(self):
+        """
+        Fase 4: Semántica y Salida Final.
+        Usa Pattern Matching (Estructura match-case nativa de Python 3.10+) 
+        y comprension de listas para aplicar reglas de negocio súper rápido.
+        Además evalúa su salida en base al VinoOutputSchema.
+        """
+        if self.df is None: return self
 
-        avg_alcohol = self.df["alcohol"].mean()
-        avg_ph = self.df["ph"].mean()
-        premium_count = len(self.df[self.df["categoria"] == "premium"])
+        # Extraemos valores como variables nativas de python con zip para iteración rápida
+        calidades = self.df['calidad'].values
+        alcoholes = self.df['alcohol'].values
 
-        self.reporte_ia = {
-            "diagnostico":
-                f"Lote con alcohol promedio {avg_alcohol:.2f}% y pH promedio {avg_ph:.2f}.",
-            "calidad_estimacion":
-                "Alta" if premium_count > 20 else "Media",
-            "recomendacion":
-                "Optimizar fermentación para mejorar estabilidad química.",
-            "cantidad_premium":
-                premium_count
+        categorias = []
+        for q, alc in zip(calidades, alcoholes):
+            # Uso avanzado de Match Case evaluando Tuplas (Calidad, Alcohol)
+            match (q, alc):
+                case (q, alc) if q >= 7 and alc >= 11.5:
+                    categorias.append("PREMIUM RESERVA")
+                case (q, _) if q >= 6:
+                    categorias.append("SELECCIÓN")
+                case (q, alc) if q <= 4:
+                    categorias.append("DESCARTE")
+                case _:
+                    categorias.append("MESA (ESTÁNDAR)")
+        
+        # Asignamos la nueva variable al DataFrame final
+        self.df['categoria'] = categorias
+
+        # Validación final de salida contra OutputSchema de Pydantic
+        muestra = [VinoOutputSchema(**fila.to_dict()).model_dump() for _, fila in self.df.head(5).iterrows()]
+
+        # Genera el JSON final con métricas descriptivas
+        reporte = {
+            "tamaño_final": len(self.df),
+            "promedios": self.df.mean(numeric_only=True).to_dict(),
+            "distribucion_categorias": self.df['categoria'].value_counts().to_dict(),
+            "muestra_valida_pydantic": muestra
         }
 
-        with open(RUTA_OUTPUTS / "reporte_ia.json", "w") as f:
-            json.dump(self.reporte_ia, f, indent=4)
-
-        print("✓ Reporte IA generado.")
+        with open(RUTA_OUTPUTS / "reporte_ia.json", "w", encoding="utf-8") as f:
+            json.dump(reporte, f, indent=4)
+        
+        print("    ✓ Machine Pattern Matching completado.")
+        print("    ✓ Reporte IA generado en formato JSON validado.")
         return self
 
 
 # ─────────────────────────────────────────────
-# EJECUCIÓN
+# EJECUCIÓN DEL PIPELINE PRINCIPAL
 # ─────────────────────────────────────────────
 if __name__ == "__main__":
 
-    pipeline = PipelineVinos("data/winequality-red.csv")
+    # Se instancia la clase con el set de datos inicial
+    pipeline = PipelineVinos("dataset_calidad_vinos.csv")
 
+    # Gracias al patrón Builder, podemos encadenar los métodos de forma muy limpia.
+    # El orden lógico de la ETL: Ingresa -> Analiza -> Limpia -> Interpreta
     (pipeline
-        .ingestar()
+        .ingestar_y_validar()
         .eda()
-        .limpiar_y_clasificar()
-        .interpretar_con_ia()
+        .aplicar_limpieza()
+        .interpretacion_ai()
     )
 
-    print("\n✅ PROCESO COMPLETADO")
+    print("\n✅ PROCESO COMPLETADO Y DOCUMENTADO")

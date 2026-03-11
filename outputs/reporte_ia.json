@@ -1,6 +1,100 @@
 {
-    "diagnostico": "Lote con alcohol promedio 10.37% y pH promedio 3.31.",
-    "calidad_estimacion": "Media",
-    "recomendacion": "Optimizar fermentaci\u00f3n para mejorar estabilidad qu\u00edmica.",
-    "cantidad_premium": 13
+    "tama\u00f1o_final": 1332,
+    "promedios": {
+        "acidez_fija": 8.322147147147147,
+        "acidez_volatil": 0.5308708708708709,
+        "acido_citrico": 0.2713888888888889,
+        "azucar_residual": 2.51478978978979,
+        "cloruros": 0.08856306306306305,
+        "dioxido_azufre_libre": 15.927177177177176,
+        "dioxido_azufre_total": 46.772147147147145,
+        "densidad": 0.9967631156156157,
+        "ph": 3.3077102102102103,
+        "sulfatos": 0.6572897897897898,
+        "alcohol": 10.369857357357358,
+        "calidad": 5.607357357357357
+    },
+    "distribucion_categorias": {
+        "SELECCI\u00d3N": 609,
+        "MESA (EST\u00c1NDAR)": 573,
+        "PREMIUM RESERVA": 88,
+        "DESCARTE": 62
+    },
+    "muestra_valida_pydantic": [
+        {
+            "acidez_fija": 7.4,
+            "acidez_volatil": 0.7,
+            "acido_citrico": 0.0,
+            "azucar_residual": 1.9,
+            "cloruros": 0.076,
+            "dioxido_azufre_libre": 11.0,
+            "dioxido_azufre_total": 34.0,
+            "densidad": 0.9978,
+            "ph": 3.51,
+            "sulfatos": 0.56,
+            "alcohol": 9.4,
+            "calidad": 5,
+            "categoria": "MESA (EST\u00c1NDAR)"
+        },
+        {
+            "acidez_fija": 7.8,
+            "acidez_volatil": 0.88,
+            "acido_citrico": 0.0,
+            "azucar_residual": 2.6,
+            "cloruros": 0.098,
+            "dioxido_azufre_libre": 25.0,
+            "dioxido_azufre_total": 67.0,
+            "densidad": 0.9968,
+            "ph": 3.2,
+            "sulfatos": 0.68,
+            "alcohol": 9.8,
+            "calidad": 5,
+            "categoria": "MESA (EST\u00c1NDAR)"
+        },
+        {
+            "acidez_fija": 7.8,
+            "acidez_volatil": 0.76,
+            "acido_citrico": 0.04,
+            "azucar_residual": 2.3,
+            "cloruros": 0.092,
+            "dioxido_azufre_libre": 15.0,
+            "dioxido_azufre_total": 54.0,
+            "densidad": 0.997,
+            "ph": 3.26,
+            "sulfatos": 0.65,
+            "alcohol": 9.8,
+            "calidad": 5,
+            "categoria": "MESA (EST\u00c1NDAR)"
+        },
+        {
+            "acidez_fija": 11.2,
+            "acidez_volatil": 0.28,
+            "acido_citrico": 0.56,
+            "azucar_residual": 1.9,
+            "cloruros": 0.075,
+            "dioxido_azufre_libre": 17.0,
+            "dioxido_azufre_total": 60.0,
+            "densidad": 0.998,
+            "ph": 3.16,
+            "sulfatos": 0.58,
+            "alcohol": 9.8,
+            "calidad": 6,
+            "categoria": "SELECCI\u00d3N"
+        },
+        {
+            "acidez_fija": 7.4,
+            "acidez_volatil": 0.66,
+            "acido_citrico": 0.0,
+            "azucar_residual": 1.8,
+            "cloruros": 0.075,
+            "dioxido_azufre_libre": 13.0,
+            "dioxido_azufre_total": 40.0,
+            "densidad": 0.9978,
+            "ph": 3.51,
+            "sulfatos": 0.56,
+            "alcohol": 9.4,
+            "calidad": 5,
+            "categoria": "MESA (EST\u00c1NDAR)"
+        }
+    ]
 }

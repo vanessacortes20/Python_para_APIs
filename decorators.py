@@ -1,15 +1,13 @@
 """
 MÓDULO DE DECORADORES (Semana 1)
 ================================
-Contiene herramientas para:
+Contiene herramientas para inyectar lógica adicional sin modificar 
+el código fuente de las funciones originales (Principio Open/Closed).
 
-• Logging de ejecución del pipeline
-• Validación estadística automática (Test de Shapiro-Wilk)
-
-Demuestra:
-- Uso de decoradores simples
-- Uso de Decorator Factory
-- Aplicación de QA estadístico previo al análisis
+Contiene:
+• Decorador Simple: Para logging (medir tiempos de ejecución).
+• Decorator Factory: Para validación estadística avanzada (Shapiro-Wilk)
+  aceptando parámetros (alpha).
 """
 
 import functools
@@ -24,22 +22,21 @@ from scipy import stats
 
 def registrar_ejecucion(func):
     """
-    Decorador simple.
-    
-    Registra:
-    - Hora de inicio
-    - Nombre de la función
-    - Tiempo total de ejecución
-    
-    Útil para trazabilidad del pipeline.
+    Decorador simple para trazabilidad del pipeline.
+    Imprime en consola el momento exacto en que inicia y cuánto 
+    tarda en ejecutarse la función que envuelve.
     """
+    # functools.wraps preserva el nombre original y el docstring de la función decorada
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
+        # 1. Registrar hora de inicio
         inicio = datetime.now()
         print(f"\n  [+] [{inicio:%H:%M:%S}] Ejecutando: {func.__name__}()")
 
+        # 2. Ejecutar la función original
         resultado = func(*args, **kwargs)
 
+        # 3. Calcular duración y registrar fin
         duracion = (datetime.now() - inicio).total_seconds()
         print(f"  [✓] Finalizado en {duracion:.4f} segundos")
 
